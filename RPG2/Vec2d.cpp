@@ -55,10 +55,20 @@ void Vec2d::operator /= (const double val)
 
 double Vec2d::dist(const Vec2d& v2) const
 {
-    float dx = v2.x - x;
-    float dy = v2.y - y;
+    double dx = v2.x - x;
+    double dy = v2.y - y;
     return sqrt(dx * dx + dy * dy);
 }
+
+double Vec2d::dist2(const Vec2d& v2) const
+{
+    double dx = fabs(v2.x - x);
+    double dy = fabs(v2.y - y);
+    double distance = dx * dx + dy * dy;
+
+    return (distance < 10) ? 0.0 : distance;
+}
+
 
 double Vec2d::getX() const
 {

@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <cmath>
 
 class Vec2d
 {
@@ -24,6 +25,7 @@ public:
     void operator /= (const double val);
 
     double dist(const Vec2d& v2) const;
+    double dist2(const Vec2d& v2) const;
 
     double getX() const;
     double getY() const;

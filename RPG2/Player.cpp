@@ -1,7 +1,8 @@
 #include "Player.hpp"
+#include "Enemy.hpp"
 
 Player::Player(double x, double y, SDL_Texture* tex, int f, int s)
-    : Entity(x, y, tex), animeFrames(f), animeSpeed(s)
+    : Entity(x, y, tex), animeFrames(f), animeSpeed(s), health(100)
 {
     currentFrame.x = 0;
     currentFrame.y = 0;
@@ -40,67 +41,22 @@ void Player::animate()
     }
 }
 
-
-void Player::onFloor(Map* map, int tileSize, int dx, int dy)
+bool Player::collision(Map& map, double x, double y)
 {
-    int playerX = getPosition().x;
-    int playerY = getPosition().y;
+    vector<vector<int>> mapData = map.getMapData();
+    int nextX = x / 32;
+    int nextY = y / 32;
 
-    int newX = playerX + dx;
-    int newY = playerY + dy;
-
-    if (dx != 0)
+    if (mapData[nextY][nextX] == 1)
     {
-        if (dx > 0)
-        {
-            int rightEdgeX = (newX + 32) / tileSize;
-            int bottomEdgeY = (playerY + 27 - 1) / tileSize;
-
-            if (map->getMapData()[playerY / tileSize][rightEdgeX] == 1 || map->getMapData()[bottomEdgeY][rightEdgeX] == 1)
-            {
-                newX = (rightEdgeX * tileSize) - 32;
-            }
-        }
-        else if (dx < 0)
-        {
-            int leftEdgeX = newX / tileSize;
-            int bottomEdgeY = (playerY + 27 - 1) / tileSize;
-
-            if (map->getMapData()[playerY / tileSize][leftEdgeX] == 1 || map->getMapData()[bottomEdgeY][leftEdgeX] == 1)
-            {
-                newX = (leftEdgeX + 1) * tileSize;
-            }
-        }
-
+        return false;
     }
-
-    if (dy != 0)
+    else
     {
-        if (dy > 0)
-        {
-            int bottomEdgeY = (newY + 27) / tileSize;
-            int rightEdgeX = (newX + 32 - 1) / tileSize;
-
-            if (map->getMapData()[bottomEdgeY][newX / tileSize] == 1 || map->getMapData()[bottomEdgeY][rightEdgeX] == 1)
-            {
-                newY = (bottomEdgeY * tileSize) - 27;
-            }
-        }
-        else if (dy < 0)
-        {
-            int topEdgeY = newY / tileSize;
-            int rightEdgeX = (newX + 32 - 1) / tileSize;
-
-            if (map->getMapData()[topEdgeY][newX / tileSize] == 1 || map->getMapData()[topEdgeY][rightEdgeX] == 1)
-            {
-                newY = (topEdgeY + 1) * tileSize;
-            }
-        }
+        return true;
     }
-    position.x = newX;
-    position.y = newY;
-
 }
+
 
 void Player::playerControls(Map* map)
 {
@@ -124,38 +80,106 @@ void Player::playerControls(Map* map)
     if (state[SDL_SCANCODE_A]) //MOVE LEFT
     {
         velocity.x = -10;
-        position.x += velocity.x;
-        animeState = 2; // run left
-        lastDirection = -1;
+        if (collision(*map, position.x - 1, position.y))
+        {
+            position.x += velocity.x;
+            animeState = 2; // run left
+            lastDirection = -1;
+        }
+        
         //onFloor(map, 32, -32, 0);
     }
     if (state[SDL_SCANCODE_D]) //MOVE Right
     {
         velocity.x = 10;
-        position.x += velocity.x;
-        animeState = 1; // run right
-        lastDirection = 1;
+        if (collision(*map, position.x + 120, position.y))
+        {
+            position.x += velocity.x;
+            animeState = 1; // run right
+            lastDirection = 1;
+        }
+        
         //onFloor(map, 32, 32, 0);
     }
     if (state[SDL_SCANCODE_W]) // move up
     {
         velocity.y = -10;
-        position.y += velocity.y;
-        animeState = 1; // run right
-        lastDirection = 1;
-        //onFloor(map, 32, 0, 32);
+        if (collision(*map, position.x, position.y - 1))
+        {
+            position.y += velocity.y;
+            animeState = 1; // run right
+            lastDirection = 1;
+        }
     }
     if (state[SDL_SCANCODE_S]) // move down
     {
         velocity.y = 10;
-        position.y += velocity.y;
-        animeState = 2; // run left
-        lastDirection = -1;
-        //onFloor(map, 32, 0, -32);
+        if (collision(*map, position.x, position.y + 130))
+        {
+            position.y += velocity.y;
+            animeState = 2; // run left
+            lastDirection = -1;
+        }
+        
     }
-    if (state[SDL_SCANCODE_X]) //lolz
-    {
-        animeState = 4;
-    }
+}
+
+void Player::keepInMap(Map& map)
+{
 
 }
+
+void Player::attack(Enemy* enemy)
+{
+    Vec2d enemyPos(enemy->getPosition().getX(), enemy->getPosition().getY()); // add half of height and width of enemy
+    if (int(position.dist(enemyPos)) < 100)
+    {
+        const Uint8* state = SDL_GetKeyboardState(NULL);
+        static bool attackPressed = false;
+        if (state[SDL_SCANCODE_SPACE]) 
+        {
+            if (!attackPressed) 
+            {
+                attackPressed = true;
+                animeState = 4;
+                enemy->getHit();
+            }
+        }
+        else 
+        {
+            attackPressed = false;
+        } 
+    }
+}
+
+void Player::getHit(Enemy* enemy)
+{
+    Vec2d enemyPos(enemy->getPosition().getX(), enemy->getPosition().getY());
+    const Uint32 damageInterval = 5000;
+    Uint32 currentTime = SDL_GetTicks();
+    Uint32 lastDamageTime = 0;
+    if (int(position.dist2(enemyPos)) < 50)
+    {
+        enemy->setMode(1);
+        if (currentTime - lastDamageTime >= damageInterval)
+        {
+            enemy->setMode(1);
+            health -= 10;
+            lastDamageTime = currentTime;
+            if (health <= 0)
+            {
+                health = 0;
+                cout << "DEAD" << endl;
+            }
+        }
+    }
+    enemy->setMode(0);
+}
+
+int Player::getHealth()
+{
+    return health;
+}
+
+
+

@@ -28,8 +28,10 @@ int main(int argc, char* argv[])
         int startTicks = SDL_GetTicks();
 
         game->handleEvents();
-
-        game->update();
+        if (game->getGameState() == 1)
+        {
+            game->update();
+        }
 
         game->render();
 

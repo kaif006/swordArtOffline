@@ -25,7 +25,7 @@ SDL_Rect Entity::getCurrentFrame() const
 
 void Entity::animate() {}
 
-void Entity::followPlayer(Player& player, Map& map){}
+//void Entity::followPlayer(Player& player, Map& map){}
 
 bool Entity::checkCollision(const Entity& other) const
 {

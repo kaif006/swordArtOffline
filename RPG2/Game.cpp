@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <iostream>
 #include <vector>
 #include "RenderWindow.hpp"
@@ -8,7 +9,7 @@
 #include "Tile.hpp"
 #include "Player.hpp"
 
-Game::Game()
+Game::Game(): gameState(0)
 {}
 
 SDL_Rect Game::camera = { 0,0,1200,720 };
@@ -31,6 +32,15 @@ void Game::init(const char* title, int width, int height, bool fullScreen)
         isRunning = true;
     }
     else { isRunning = false; }
+
+    // for sound
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    {
+        std::cerr << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
+    }
+    backgroundMusic = Mix_LoadMUS("C:\\Users\\pc\\Documents\\Coding\\sprites\\the-suspicion-228728.mp3");
+    Mix_Music* doom = Mix_LoadMUS("C:\\Users\\pc\\Documents\\Coding\\sprites\\Doom OST - E1M1 - At Doom's Gate [ ezmp3.cc ].mp3");
+    Mix_PlayMusic(doom, -1);
 
     // generate map
     map.generateRoomsAndCorridors();
@@ -67,6 +77,8 @@ void Game::handleEvents()
     case SDL_QUIT:
         isRunning = false;
         break;
+    case SDL_KEYDOWN:
+        gameState = 1;
 
     default:
         break;
@@ -105,33 +117,55 @@ void Game::update()
 
     for (Entity* entity : entities)
     {
+        Enemy* enemy = static_cast<Enemy*>(entity);
         entity->followPlayer(*player, map);
+        player->attack(enemy);
+        if (enemy->getAlife() <= 0)
+        {
+            entities.erase(remove(entities.begin(), entities.end(), entity), entities.end());
+        }   
+        player->getHit(enemy);
     }
+
+    if (player->getHealth() <= 0)
+    {
+        gameState = 2;
+    }
+
+    
 
 }
 
 void Game::render()
 {
     window.clear();
-    SDL_Texture* BGtex = window.loadTexture("C:\\Users\\pc\\Documents\\Coding\\sprites\\WhatsApp Image 2024-07-03 at 8.45.57 PM.jpeg");
-    //window.renderBG(BGtex);
 
-    // render map
-    window.renderMap(map, camera);
-
-    window.renderEntity(*player, camera, 4.0f);
-
-    for (Entity* entity : entities)
+    if (gameState == 0) 
     {
-        SDL_Rect des = { entity->getPosition().x - camera.x, entity->getPosition().y - camera.y, 32, 32 };
-        SDL_SetRenderDrawColor(window.getRenderer(), 0, 0, 255, 255); // Red color for debugging
-        SDL_RenderFillRect(window.getRenderer(), &des);
-
-        //window.renderEntity(*entity, camera, 4.0f);
+        window.renderTitle();
     }
-    window.display();
+    else if (gameState == 1) 
+    {
+        // render map
+        window.renderMap(map, camera);
 
+        window.renderEntity(*player, camera, 4.0f);
+
+        for (Entity* entity : entities)
+        {
+            Enemy* enemy = static_cast<Enemy*>(entity);
+            window.renderEnemy(*enemy, camera);
+        }
+        window.renderHealth(player, camera);
+    }
+    else if (gameState == 2)
+    {
+        window.renderGameOver();
+    }
+
+    window.display();
 }
+
 
 void Game::spawnEnemies()
 {
@@ -154,10 +188,10 @@ void Game::spawnEnemies()
             Enemy* enemy = new Enemy(enemyX, enemyY, enemyTex);
 
             entities.push_back(enemy);
-            std::cout << "Enemy Spawned at (" << enemyX << ", " << enemyY << ")" << std::endl;
+            cout << "Enemy Spawned at (" << enemyX << ", " << enemyY << ")" << endl;
         }
     }
-    std::cout << "Total Entities: " << entities.size() << std::endl;
+    cout << "total entities: " << entities.size() << endl;
 
 }
 
@@ -165,6 +199,11 @@ void Game::spawnEnemies()
 void Game::clean()
 {
     window.cleanUp();
+}
+
+int Game::getGameState()
+{
+    return gameState;
 }
 
 bool Game::running()

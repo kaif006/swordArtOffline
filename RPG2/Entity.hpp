@@ -22,5 +22,5 @@ public:
 
     virtual void animate();
     bool checkCollision(const Entity& other) const;
-    virtual void followPlayer(Player& player, Map& map);
+    virtual void followPlayer(Player& player, Map& map) {}
 };

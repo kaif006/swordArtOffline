@@ -2,8 +2,11 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <iostream>
+#include <random>
 #include "Entity.hpp"
 #include "Map.hpp"
+
+class Enemy;
 
 class RenderWindow
 {
@@ -17,8 +20,12 @@ public:
     void cleanUp();
     void clear();
     void renderEntity(Entity& entity, SDL_Rect& camera, float scale = 1.0f);
+    void renderEnemy(Enemy& enemy, SDL_Rect& camera);
     void renderBG(SDL_Texture* tex);
     void renderMap(Map& map, SDL_Rect& camera);
+    void renderHealth(Player* player, SDL_Rect& camera);
+    void renderTitle();
+    void renderGameOver();
     void display();
     SDL_Renderer* getRenderer();
 

@@ -63,7 +63,7 @@ bool Map::overlaps(const Room& newRoom) const
             return true; // overlap
         }
     }
-    return false; // no overlao
+    return false; // nooverlap
 }
 
 void Map::connectRooms(const Room& roomA, const Room& roomB)
@@ -135,4 +135,9 @@ int Map::getHeight()
 const vector<Map::Room>& Map::getRooms()
 {
     return rooms;
+}
+
+bool Map::isWalkable(int x, int y)
+{
+    return x >= 0 && x < width && y >= 0 && y < height && (mapData[x][y] == 1);
 }

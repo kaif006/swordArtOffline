@@ -28,7 +28,7 @@ public:
     int getWidth();
     int getHeight();
     const vector<Room>& getRooms();
-
+    bool isWalkable(int x, int y);
 
 };
 
